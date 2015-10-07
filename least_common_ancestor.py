@@ -17,7 +17,7 @@ def lca(node1, node2):
     if not isinstance(node1, Node) or not isinstance(node2, Node):
         raise TypeError("Inputs should be a Node.")
 
-    if node1.value == node2.value:
+    if node1 == node2:
         return node1
 
     ancestors = set()
@@ -49,6 +49,7 @@ def main():
     node9 = Node(9, node4)
 
     print(lca(node1, node1))  # 1
+    print(lca(node7, node7))  # 7
     print(lca(node1, node2))  # 1
     print(lca(node8, node9))  # 4
     print(lca(node8, node6))  # 1
