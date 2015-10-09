@@ -1,13 +1,17 @@
 """
-This is the simple implementation of EAV scheme.
-But this solution has some cons.
+This is a simple implementation of EAV data model, but it's still not very
+efficient solution and hard to maintain. I will just point out some other
+solutions:
+* Use PostgreSQL HStore (https://github.com/jordanm/django-hstore).
+* Store JSON in a model (https://github.com/bradjasper/django-jsonfield).
+* Use MongoDB or one of the other NoSQL database.
 """
 
 from __future__ import unicode_literals
 
 from functools import reduce
 
-from django.db import models, IntegrityError, transaction
+from django.db import models, transaction
 from django.db.models import Q
 from django.utils.text import slugify
 
