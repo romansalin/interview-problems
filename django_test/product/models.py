@@ -5,11 +5,15 @@ But this solution has some cons.
 
 from __future__ import unicode_literals
 
-from django.db import models
+from functools import reduce
+
+from django.db import models, IntegrityError, transaction
+from django.db.models import Q
 from django.utils.text import slugify
 
 
 class ProductCategory(models.Model):
+    """Categories of the product."""
     name = models.CharField('Name', max_length=128, unique=True)
 
     def __unicode__(self):
@@ -21,6 +25,7 @@ class ProductCategory(models.Model):
 
 
 class Product(models.Model):
+    """Products."""
     category = models.ForeignKey(ProductCategory, verbose_name='Category')
 
     def __unicode__(self):
@@ -31,7 +36,9 @@ class Product(models.Model):
         verbose_name_plural = 'Products'
 
     @classmethod
+    @transaction.atomic
     def add_product(cls, category_name, attribute_values):
+        """Add the product with its attributes."""
         category, created = ProductCategory.objects.get_or_create(
             name=category_name)
         product = cls.objects.create(category=category)
@@ -60,9 +67,35 @@ class Product(models.Model):
                 attribute=attribute,
                 value=value,
             )
+        return product
+
+    @classmethod
+    def find_products(cls, category_name, attribute_values):
+        """Find products by their attributes."""
+        filters = []
+        for attr_slug, datatype, value in attribute_values:
+            filters.append(
+                Q(
+                    attribute__slug=attr_slug,
+                    **{'value_{0}'.format(datatype): value}
+                )
+            )
+
+        products = []
+        for filter_ in filters:
+            products.append(
+                AttributeValue.objects.filter(
+                    filter_,
+                    attribute__category__name=category_name,
+                ).values_list('product_id', flat=True)
+            )
+
+        product_ids = reduce(lambda p1, p2: set(p1) & set(p2), products)
+        return cls.objects.filter(id__in=product_ids)
 
 
 class Attribute(models.Model):
+    """Attributes of the product."""
     TYPE_BOOLEAN = 'boolean'
     TYPE_INTEGER = 'integer'
     TYPE_FLOAT = 'float'
@@ -102,6 +135,7 @@ class Attribute(models.Model):
 
 
 class AttributeValue(models.Model):
+    """Attribute values of the product."""
     product = models.ForeignKey(Product, verbose_name='Product')
     attribute = models.ForeignKey(Attribute, verbose_name='Attribute')
     value_float = models.FloatField('Float value', blank=True, null=True)
