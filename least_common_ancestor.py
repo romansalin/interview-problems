@@ -3,6 +3,17 @@ class Node(object):
         self.value = value
         self.parent = parent
 
+    def __eq__(self, other):
+        if isinstance(other, Node):
+            return self.value == other.value
+        return NotImplemented
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __hash__(self):
+        return hash(self.value)
+
     def __str__(self):
         return str(self.value)
 
@@ -16,9 +27,6 @@ def lca(node1, node2):
     """
     if not isinstance(node1, Node) or not isinstance(node2, Node):
         raise TypeError("Inputs should be a Node.")
-
-    if node1 == node2:
-        return node1
 
     ancestors = set()
     while node1 or node2:
