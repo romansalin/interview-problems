@@ -1,7 +1,10 @@
 """
-This is a simple implementation of EAV data model, but it's still not very
-efficient solution and hard to maintain. I will just point out some other
-solutions:
+This is a simple implementation of EAV data model
+(https://en.wikipedia.org/wiki/Entity-attribute-value_model) with the ability
+to create multiple entities of different types.
+
+But it's still not very efficient solution and hard to maintain.
+I will just point out some other solutions:
 * Use PostgreSQL HStore (https://github.com/jordanm/django-hstore).
 * Store JSON in a model (https://github.com/bradjasper/django-jsonfield).
 * Use MongoDB or one of the other NoSQL database.
@@ -80,22 +83,20 @@ class Product(models.Model):
         for attr_slug, datatype, value in attribute_values:
             filters.append(
                 Q(
-                    attribute__slug=attr_slug,
-                    **{'value_{0}'.format(datatype): value}
+                    attributevalue__attribute__slug=attr_slug,
+                    **{'attributevalue__value_{0}'.format(datatype): value}
                 )
             )
 
         products = []
+        product_values = cls.objects.filter(category__name=category_name)
         for filter_ in filters:
             products.append(
-                AttributeValue.objects.filter(
-                    filter_,
-                    attribute__category__name=category_name,
-                ).values_list('product_id', flat=True)
+                product_values.filter(filter_)
             )
 
-        product_ids = reduce(lambda p1, p2: set(p1) & set(p2), products)
-        return cls.objects.filter(id__in=product_ids)
+        filtered_products = reduce(lambda p1, p2: set(p1) & set(p2), products)
+        return list(filtered_products)
 
 
 class Attribute(models.Model):
